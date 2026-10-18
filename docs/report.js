@@ -68,15 +68,16 @@
       `<div class="kpi"><div class="v">${T.pops.screened}</div><div class="l">screened, ${rand} randomised</div></div>`,
       `<div class="kpi"><div class="v">${saf}</div><div class="l">in the safety population</div>${armline(a => N(a))}</div>`,
       `<div class="kpi"><div class="l">completed the study</div>${armline(a => comp(a) + "%")}</div>`,
-      `<div class="kpi"><div class="l">any treatment-emergent adverse event</div>${armline(a => any.pct[a] + "%")}</div>`,
-      `<div class="kpi"><div class="l">dermatologic event</div>${armline(a => derm.pct[a] + "%")}</div>`,
+      `<div class="kpi"><div class="l">any treatment-emergent adverse event</div>${armline(a => (+any.pct[a]).toFixed(1) + "%")}</div>`,
+      `<div class="kpi"><div class="l">dermatologic event</div>${armline(a => (+derm.pct[a]).toFixed(1) + "%")}</div>`,
       hrHi ? `<div class="kpi"><div class="v">${hrHi.hr.toFixed(1)}×</div><div class="l">hazard of a skin event, high dose vs placebo (95% CI ${hrHi.lo.toFixed(1)}–${hrHi.hi.toFixed(1)})</div></div>` : ""
     ].join("");
+    const p1 = v => (+v).toFixed(1);
     const wd = T.ae_overview.find(r => /because of an adverse event|withdrawal/.test(r.label));
     const lines = [];
     lines.push(`Completion was ${comp(ARMS[0])}% on placebo against ${comp(ARMS[1])}% and ${comp(ARMS[2])}% on the low and high dose: most subjects on xanomeline left the study early.`);
-    if (wd) lines.push(`${wd.pct[ARMS[2]]}% of high-dose and ${wd.pct[ARMS[1]]}% of low-dose subjects left the study because of an adverse event, against ${wd.pct[ARMS[0]]}% on placebo.`);
-    lines.push(`Skin and application-site reactions drive the difference: ${derm.pct[ARMS[2]]}% (high dose) and ${derm.pct[ARMS[1]]}% (low dose) against ${derm.pct[ARMS[0]]}% on placebo.`);
+    if (wd) lines.push(`${p1(wd.pct[ARMS[2]])}% of high-dose and ${p1(wd.pct[ARMS[1]])}% of low-dose subjects left the study because of an adverse event, against ${p1(wd.pct[ARMS[0]])}% on placebo.`);
+    lines.push(`Skin and application-site reactions drive the difference: ${p1(derm.pct[ARMS[2]])}% (high dose) and ${p1(derm.pct[ARMS[1]])}% (low dose) against ${p1(derm.pct[ARMS[0]])}% on placebo.`);
     $("#takeaways").innerHTML = lines.map(l => `<p>${esc(l)}</p>`).join("");
   }
 
