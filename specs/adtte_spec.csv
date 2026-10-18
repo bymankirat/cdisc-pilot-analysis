@@ -1,0 +1,11 @@
+Variable,Label,Source,Derivation
+USUBJID,Unique subject identifier,ADSL.USUBJID,One row per safety subject
+PARAMCD,Parameter code,,TTDE
+PARAM,Parameter,,Time to first dermatologic event (days)
+STARTDT,Time-to-event origin,ADSL.TRTSDT,First dose date
+EVNTDT,Event date,ADAE.ASTDT,Earliest ASTDT of a treatment-emergent event with DERMFL = Y
+CNSDT,Censoring date,"ADSL.TRTEDT, ADSL.EOSDT","TRTEDT + 30 days (end of the treatment-emergent window); if TRTEDT is missing, EOSDT"
+CNSDTDSC,Censoring date description,,"LAST DOSE + 30 DAYS, or END OF STUDY (NO LAST DOSE DATE)"
+AVAL,Analysis value (days),"EVNTDT, CNSDT, TRTSDT","Event day if EVNTDT <= CNSDT, otherwise censoring day; day of first dose = 1"
+CNSR,Censor flag,"EVNTDT, CNSDT","0 = event, 1 = censored"
+TRTP,Planned treatment for the analysis,ADSL.TRT01A,"Factor with Placebo as reference level"

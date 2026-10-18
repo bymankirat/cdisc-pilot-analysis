@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Xanomeline Trial Reanalysis</title>
+<meta name="description" content="CDISC pilot study (xanomeline in Alzheimer's disease) taken from raw SDTM to ADaM, safety tables, survival analysis, SQL and independent QC in R.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="report.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Clinical trial analysis · R · CDISC SDTM → ADaM → TLFs</p>
+    <h1>Xanomeline for Alzheimer's disease: safety reanalysis of the CDISC pilot trial</h1>
+    <p class="lede">A 26-week, double-blind, placebo-controlled study of a xanomeline skin patch at two doses. I took the raw
+      trial data (SDTM) to analysis datasets (ADaM), built the safety tables and figures, ran a time-to-event analysis,
+      queried the same data in SQL, and checked my own derivations with an independent second program.</p>
+    <p class="byline">Mankirat Singh · <span id="generated"></span></p>
+    <nav class="toc" aria-label="Sections">
+      <a href="#glance">At a glance</a><a href="#pipeline">Pipeline</a><a href="#flow">Study flow</a><a href="#demog">Demographics</a>
+      <a href="#disp">Disposition</a><a href="#ae">Adverse events</a><a href="#vs">Vital signs</a><a href="#lab">Laboratory</a>
+      <a href="#tte">Time to event</a><a href="#qc">QC</a><a href="#sql">SQL</a><a href="#specs">Specs</a><a href="#about">How it was built</a>
+    </nav>
+  </div>
+</header>
+
+<div id="banner" class="banner" hidden></div>
+
+<main class="wrap">
+  <section id="glance">
+    <h2>At a glance</h2>
+    <div id="kpis" class="kpis"></div>
+    <div id="takeaways" class="takeaways"></div>
+  </section>
+
+  <section id="pipeline">
+    <h2>From raw trial data to results</h2>
+    <p class="note">Row counts are from this run. Each arrow is an R script in <code>R/</code>.</p>
+    <div id="pipe" class="pipe"></div>
+  </section>
+
+  <section id="flow">
+    <h2>Study flow</h2>
+    <p class="note">Screened, randomised and completed subjects (CONSORT-style). Completion uses the last disposition event in DS.</p>
+    <div id="consort" class="consort"></div>
+  </section>
+
+  <section id="demog">
+    <h2>Demographics and baseline characteristics</h2>
+    <p class="note">Safety population. Continuous variables: n, mean (SD), median, min and max. Categorical: n (%).</p>
+    <div class="tools"><button data-csv="demog">Download CSV</button></div>
+    <div class="tablewrap"><table id="t-demog" class="tbl"></table></div>
+  </section>
+
+  <section id="disp">
+    <h2>Disposition</h2>
+    <p class="note">Randomised subjects, by the arm they were randomised to and their reason for leaving the study.</p>
+    <figure class="chart wide" id="c-disp"></figure>
+    <div class="tablewrap"><table id="t-disp" class="tbl"></table></div>
+  </section>
+
+  <section id="ae">
+    <h2>Adverse events</h2>
+    <p class="note">Treatment-emergent: started on or after the first dose and no later than 30 days after the last dose.
+      Subjects are counted once per row, however many times the event happened.</p>
+    <div class="tablewrap"><table id="t-aeov" class="tbl"></table></div>
+
+    <h3>Most common events, by arm</h3>
+    <p class="note">The 15 preferred terms with the highest rate in any arm.</p>
+    <figure class="chart wide" id="c-dots"></figure>
+
+    <h3>Every body system and event</h3>
+    <div class="tools">
+      <input id="ae-search" type="search" placeholder="Search events, e.g. pruritus" aria-label="Search adverse events">
+      <label>Min. rate in any arm <select id="ae-min"><option value="0">all</option><option value="2">2%</option><option value="5" selected>5%</option><option value="10">10%</option></select></label>
+      <label>Sort <select id="ae-sort"><option value="total">most common</option><option value="diff">high dose minus placebo</option><option value="alpha">A–Z</option></select></label>
+      <button id="ae-expand">Expand all</button>
+      <button data-csv="ae">Download CSV</button>
+    </div>
+    <div class="tablewrap"><table id="t-ae" class="tbl ae"></table></div>
+  </section>
+
+  <section id="vs">
+    <h2>Vital signs</h2>
+    <p class="note">Mean change from baseline (± standard error) at each scheduled visit. Repeated readings at a visit are averaged first.</p>
+    <div class="tools"><label>Measure <select id="vs-param"></select></label></div>
+    <figure class="chart wide" id="c-vs"></figure>
+  </section>
+
+  <section id="lab">
+    <h2>Laboratory shifts</h2>
+    <p class="note">Each grid: reference-range category at baseline (rows) against the worst category after baseline (columns). Off-diagonal cells are subjects who moved.</p>
+    <div class="tools"><label>Test <select id="lab-test"></select></label></div>
+    <div id="c-lab" class="shifts"></div>
+    <p id="lab-sum" class="note"></p>
+  </section>
+
+  <section id="tte">
+    <h2>Time to first dermatologic event</h2>
+    <p class="note">Skin disorders or application-site reactions, from the first dose. Subjects without an event are censored 30 days after their last dose. Kaplan–Meier estimate with log-log 95% confidence bands.</p>
+    <div class="tools"><label><input type="checkbox" id="km-ci" checked> Confidence bands</label><label><input type="checkbox" id="km-cum"> Show as cumulative incidence</label></div>
+    <figure class="chart wide" id="c-km"></figure>
+    <div class="two">
+      <div><h3>Hazard ratio vs placebo (Cox model)</h3><figure class="chart" id="c-hr"></figure></div>
+      <div><h3>Summary</h3><div class="tablewrap"><table id="t-tte" class="tbl"></table></div></div>
+    </div>
+  </section>
+
+  <section id="qc">
+    <h2>Quality control: did I get it right?</h2>
+    <p class="note">In pharma every key dataset is programmed twice by different people and the two versions must match.
+      Here the second version is a separate base-R program written straight from SDTM, without admiral or dplyr.</p>
+    <div id="qc-summary" class="qcsum"></div>
+    <div class="two">
+      <div><h3>ADSL: production vs independent version</h3><div class="tablewrap"><table id="t-qc-adsl" class="tbl"></table></div></div>
+      <div><h3>Subjects with a treatment-emergent event: three ways</h3><div class="tablewrap"><table id="t-qc-teae" class="tbl"></table></div></div>
+    </div>
+    <div class="two">
+      <div><h3>Rules every dataset must follow</h3><ul id="qc-checks" class="checks"></ul></div>
+      <div><h3>Unit tests (testthat)</h3><div class="tablewrap"><table id="t-qc-tests" class="tbl"></table></div></div>
+    </div>
+    <div id="qc-notes"></div>
+    <div id="qc-ref"></div>
+  </section>
+
+  <section id="sql">
+    <h2>The same data in SQL</h2>
+    <p class="note">The analysis datasets loaded into DuckDB and queried directly. One of these queries is part of the QC above.</p>
+    <div id="sql-cards" class="sqlcards"></div>
+  </section>
+
+  <section id="specs">
+    <h2>Dataset specifications</h2>
+    <p class="note">How each variable is derived, in the form a statistical programmer works from. Files: <code>specs/*.csv</code>.</p>
+    <div id="spec-tabs" class="tabs" role="tablist"></div>
+    <div class="tablewrap"><table id="t-spec" class="tbl"></table></div>
+  </section>
+
+  <section id="about">
+    <h2>How it was built</h2>
+    <div class="two">
+      <div>
+        <h3>What this shows</h3>
+        <ul class="plain">
+          <li><b>CDISC standards.</b> SDTM domains in, ADaM datasets (ADSL, ADAE, ADVS, ADLB, ADTTE) out, with written specifications.</li>
+          <li><b>Pharmaverse.</b> Derivations with <code>admiral</code>: date imputation, merged variables, population flags.</li>
+          <li><b>Safety TLFs.</b> Demographics, disposition, adverse events by body system and preferred term, vital signs, lab shift tables.</li>
+          <li><b>Survival analysis.</b> Kaplan–Meier, log-rank test and a Cox model.</li>
+          <li><b>Double programming.</b> An independent base-R version, compared with <code>diffdf</code>.</li>
+          <li><b>SQL.</b> DuckDB queries, including joins and window functions.</li>
+          <li><b>Testing.</b> Unit tests for every derivation helper with <code>testthat</code>.</li>
+          <li><b>Reproducible.</b> One script, <code>run_all.R</code>, rebuilds everything from the public data.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Data and limits</h3>
+        <p>The data are the CDISC SDTM/ADaM Pilot Project study (CDISCPILOT01), released publicly for training, and distributed in R by the
+          <code>pharmaversesdtm</code> package. No personal data are involved.</p>
+        <p>This is a training reanalysis, not the sponsor's analysis. The efficacy endpoints (ADAS-Cog, CIBIC+) are not covered.
+          Some derivation choices (treatment-emergent window, "worst" lab category, the dermatologic event definition) are mine and are written down in the specs.</p>
+        <h3>Software</h3>
+        <p id="software" class="small"></p>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="wrap foot">Mankirat Singh · MSc Bioinformatics and Computational Biology, University College Cork · <a href="https://github.com/bymankirat/cdisc-pilot-analysis">Code on GitHub</a></footer>
+
+<script src="results.js"></script>
+<script src="report.js"></script>
+</body>
+</html>

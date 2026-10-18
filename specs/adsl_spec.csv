@@ -1,0 +1,18 @@
+Variable,Label,Source,Derivation
+USUBJID,Unique subject identifier,DM.USUBJID,Copied
+TRT01P,Planned treatment for period 01,DM.ARM,Copied
+TRT01A,Actual treatment for period 01,DM.ACTARM,Copied
+TRTSDTM,Datetime of first exposure to treatment,EX.EXSTDTC,"Earliest EXSTDTC over valid doses (EXDOSE > 0, or EXDOSE = 0 for placebo). Missing time set to 00:00:00"
+TRTEDTM,Datetime of last exposure to treatment,EX.EXENDTC,"Latest EXENDTC over valid doses. Missing time set to 23:59:59"
+TRTSDT,Date of first exposure to treatment,TRTSDTM,Date part of TRTSDTM
+TRTEDT,Date of last exposure to treatment,TRTEDTM,Date part of TRTEDTM
+TRTDURD,Total treatment duration (days),"TRTSDT, TRTEDT",TRTEDT - TRTSDT + 1
+SAFFL,Safety population flag,EX,"Y if the subject has at least one valid dose record, otherwise N"
+ITTFL,Intent-to-treat population flag,DM.ARMCD,"Y if ARMCD is not missing, Scrnfail or NOTASSGN, otherwise N. Disposition counts use TRT01P (as randomised); safety tables use TRT01A (as treated)"
+AGEGR1,Pooled age group 1,DM.AGE,"<65; 65-80; >80"
+EOSSTT,End of study status,DS,"Last disposition event: COMPLETED, DISCONTINUED, or missing for screen failures"
+DCSREAS,Reason for discontinuation from study,DS.DSDECOD,DSDECOD of the last disposition event when EOSSTT = DISCONTINUED
+EOSDT,End of study date,DS.DSSTDTC,Date of the last disposition event
+HEIGHTBL,Baseline height (cm),VS,"Mean of baseline-flagged records (VSBLFL = Y), else the first record"
+WEIGHTBL,Baseline weight (kg),VS,"Mean of baseline-flagged records (VSBLFL = Y), else the first record"
+BMIBL,Baseline BMI (kg/m2),"HEIGHTBL, WEIGHTBL","WEIGHTBL / (HEIGHTBL / 100)^2, rounded to 1 decimal"

@@ -1,0 +1,11 @@
+Variable,Label,Source,Derivation
+USUBJID,Unique subject identifier,AE.USUBJID,Safety population only (SAFFL = Y)
+AEBODSYS,Body system or organ class,AE.AEBODSYS,Copied (MedDRA system organ class)
+AEDECOD,Dictionary-derived term,AE.AEDECOD,Copied (MedDRA preferred term)
+ASTDT,Analysis start date,AE.AESTDTC,"Missing day or month imputed as the first; year-only dates imputed to 1 January"
+AENDT,Analysis end date,AE.AEENDTC,Complete dates only
+TRTA,Actual treatment,ADSL.TRT01A,Copied
+TRTEMFL,Treatment-emergent analysis flag,"ASTDT, ADSL.TRTSDT, ADSL.TRTEDT",Y if TRTSDT <= ASTDT <= TRTEDT + 30 days
+ASTDY,Analysis start relative day,"ASTDT, TRTSDT",ASTDT - TRTSDT + 1
+AREL,Analysis causality,AE.AEREL,"RELATED if AEREL is POSSIBLE or PROBABLE, otherwise NOT RELATED"
+DERMFL,Dermatologic event flag,"AEBODSYS, AEDECOD","Y if AEBODSYS is SKIN AND SUBCUTANEOUS TISSUE DISORDERS or AEDECOD starts with APPLICATION SITE"
